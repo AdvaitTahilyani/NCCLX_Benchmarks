@@ -1,0 +1,23 @@
+mainmodule nccl_integration {
+  readonly CProxy_Main mainProxy;
+  readonly CProxy_NodeManager nodeManagerProxy;
+  readonly CProxy_Worker workerProxy;
+  readonly int vectorSize;
+  readonly int numCharesPerNode;
+
+  mainchare Main {
+    entry Main(CkArgMsg *m);
+    entry void initDone();
+    entry void nodeDone();
+  };
+
+  group NodeManager {
+    entry NodeManager(int nBytes, char id[nBytes]);
+    entry void registerWorker(); 
+  };
+
+  array [1D] Worker {
+    entry Worker();
+    entry void startStep();
+  };
+};
