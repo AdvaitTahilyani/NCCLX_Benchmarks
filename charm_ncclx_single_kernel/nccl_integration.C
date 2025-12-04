@@ -10,6 +10,7 @@ extern "C" void allocateDeviceBuffer(float** ptr, int size);
 extern "C" void freeDeviceBuffer(float* ptr);
 extern "C" void launchMultiAccumulate(float* dst, float** h_srcs, int numSrcs, int size, cudaStream_t stream);
 extern "C" void launchFill(float* data, float value, int size, cudaStream_t stream);
+extern "C" void launchDummyCompute(float* data, int k, int size, cudaStream_t stream);
 extern "C" void checkCudaErrors();
 
 CProxy_Main mainProxy;
@@ -17,6 +18,7 @@ CProxy_NodeManager nodeManagerProxy;
 CProxy_Worker workerProxy;
 int vectorSize = 1024 * 1024; 
 int numCharesPerNode = 4;
+int kIterations = 100;
 
 #define NCCLCHECK(cmd) do {                         \
   ncclResult_t r = cmd;                             \
@@ -39,6 +41,7 @@ public:
     Main(CkArgMsg* m) : numNodesReady(0), nodesFinishedStep(0), currentIter(0), totalIters(10), warmupIters(2) {
         if (m->argc > 1) vectorSize = atoi(m->argv[1]);
         if (m->argc > 2) numCharesPerNode = atoi(m->argv[2]);
+        if (m->argc > 3) kIterations = atoi(m->argv[3]);
         delete m;
 
         mainProxy = thisProxy;
@@ -92,7 +95,7 @@ public:
 
         cudaSetDevice(0); 
         NCCLCHECK(ncclCommInitRank(&comm, CkNumPes(), id, CkMyPe()));
-        cudaStreamCreate(&stream);
+        cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
         allocateDeviceBuffer(&d_resultBuffer, vectorSize);
 
         srcPtrs.reserve(numCharesPerNode);
@@ -101,8 +104,9 @@ public:
 
     void registerWorker() {}
 
-    void depositData(float* d_data) {
+    void depositData(float* d_data, cudaEvent_t event) {
         srcPtrs.push_back(d_data);
+        cudaStreamWaitEvent(stream, event, 0);
         checkCompletion();
     }
 
@@ -122,18 +126,21 @@ public:
 
 class Worker : public CBase_Worker {
     float* d_data;
+    cudaStream_t computeStream;
+    cudaEvent_t readyEvent;
 public:
     Worker() {
         allocateDeviceBuffer(&d_data, vectorSize);
-        cudaStream_t tempStream;
-        cudaStreamCreate(&tempStream);
-        launchFill(d_data, 1.0f, vectorSize, tempStream);
-        cudaStreamDestroy(tempStream);
+        cudaStreamCreateWithFlags(&computeStream, cudaStreamNonBlocking);
+        cudaEventCreate(&readyEvent);
+        launchFill(d_data, 1.0f, vectorSize, computeStream);
     }
 
     void startStep() {
+        launchDummyCompute(d_data, kIterations, vectorSize, computeStream);
+        cudaEventRecord(readyEvent, computeStream);
         NodeManager* myNode = nodeManagerProxy.ckLocalBranch();
-        myNode->depositData(d_data);
+        myNode->depositData(d_data, readyEvent);
     }
 };
 

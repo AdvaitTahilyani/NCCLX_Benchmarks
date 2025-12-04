@@ -4,6 +4,7 @@ mainmodule nccl_integration {
   readonly CProxy_Worker workerProxy;
   readonly int vectorSize;
   readonly int numCharesPerNode;
+  readonly int kIterations;
 
   mainchare Main {
     entry Main(CkArgMsg *m);

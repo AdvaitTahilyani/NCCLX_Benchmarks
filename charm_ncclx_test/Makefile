@@ -15,7 +15,7 @@ LDFLAGS = -L$(NCCL_HOME)/lib -L$(CONDA_PREFIX)/lib \
           -lnccl -lstdc++fs -lglog -lunwind -lsodium -lpthread -lfmt \
           -lgflags -ldouble-conversion -ldwarf -lboost_context -lbz2 \
           -Wl,-rpath,$(CONDA_PREFIX)/lib -Wl,-rpath-link,$(CONDA_PREFIX)/lib \
-          -L$(CUDA_HOME)/lib64 -lcudart
+          -L$(CUDA_HOME)/lib64 -lcudart -lmpi -L/opt/apps/gcc13/openmpi/5.0.8/lib
 
 TARGET = nccl_integration
 OBJS = nccl_integration.o kernels.o
@@ -39,6 +39,7 @@ kernels.h:
 	echo 'extern "C" void freeDeviceBuffer(float* ptr);' >> kernels.h
 	echo 'extern "C" void launchAccumulate(float* dst, const float* src, int size, cudaStream_t stream);' >> kernels.h
 	echo 'extern "C" void launchFill(float* data, float value, int size, cudaStream_t stream);' >> kernels.h
+	echo 'extern "C" void launchDummyCompute(float* data, int k, int size, cudaStream_t stream);' >> kernels.h
 	echo 'extern "C" void checkCudaErrors();' >> kernels.h
 
 clean:

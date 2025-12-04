@@ -17,8 +17,8 @@ chares_list = [4, 8, 16, 32, 64]
 
 # Paths
 base_dir = os.path.expanduser("~")
-prog_direct = os.path.join(base_dir, "charm_ncclx_test", "nccl_integration")
-prog_single = os.path.join(base_dir, "charm_ncclx_single_kernel", "nccl_integration")
+prog_direct = os.path.join(base_dir, "NCCLX_Benchmarks", "charm_ncclx_test", "nccl_integration")
+prog_single = os.path.join(base_dir, "NCCLX_Benchmarks", "charm_ncclx_single_kernel", "nccl_integration")
 
 # Results: {(size, chares): {'direct': time, 'single': time}}
 results = {}

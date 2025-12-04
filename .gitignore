@@ -1,0 +1,28 @@
+# C++ build objects
+*.o
+*.obj
+
+# Charm++ generated files
+*.decl.h
+*.def.h
+*.ci.stamp
+
+# Executables
+charmrun
+nccl_integration
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs and outputs
+*.out
+*.err
+log.txt
+benchmark_comparison.png
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+

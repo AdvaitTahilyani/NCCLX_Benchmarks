@@ -45,4 +45,21 @@ extern "C" void checkCudaErrors() {
     }
 }
 
+__global__ void dummyComputeKernel(float* data, int k, int size) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size) {
+        float val = data[idx];
+        for (int i = 0; i < k; i++) {
+            val = val * val + 0.0001f;
+        }
+        data[idx] = val;
+    }
+}
+
+extern "C" void launchDummyCompute(float* data, int k, int size, cudaStream_t stream) {
+    int blockSize = 256;
+    int numBlocks = (size + blockSize - 1) / blockSize;
+    dummyComputeKernel<<<numBlocks, blockSize, 0, stream>>>(data, k, size);
+}
+
 
