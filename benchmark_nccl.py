@@ -30,9 +30,11 @@ results = {}
 def log(msg):
     print(msg, flush=True)
 
+KCOMP = int(os.environ.get("BENCH_KCOMP", "1000"))   # compute iterations per chare
+
 def run_bench(prog, size, chares, k_val=None):
     in_slurm = "SLURM_JOB_ID" in os.environ
-    
+
     # Determine method name for logging
     if 'test' in prog:
         method_name = 'Direct'
@@ -40,20 +42,17 @@ def run_bench(prog, size, chares, k_val=None):
         method_name = f'Spanning Tree (K={k_val})'
     else:
         method_name = 'Single'
-    
-    # Build command
+
+    # All three programs accept: size chares kcomp [K]   (K only for spanning tree)
     if k_val is not None:
-        base_cmd = f"{prog} {size} {chares} 100 {k_val} +HapiPoolSize 16M"
+        base_cmd = f"{prog} {size} {chares} {KCOMP} {k_val} +HapiPoolSize 16M"
     else:
-        base_cmd = f"{prog} {size} {chares} +HapiPoolSize 16M"
-    
+        base_cmd = f"{prog} {size} {chares} {KCOMP} +HapiPoolSize 16M"
+
     if in_slurm:
         cmd = f"mpiexec -n 1 {base_cmd}"
     else:
-        if k_val is not None:
-            cmd = f"srun -p h100 -N 1 -n 1 -t 00:20:00 bash -c 'source ~/init.sh; {prog} {size} {chares} 100 {k_val} +HapiPoolSize 16M'"
-        else:
-            cmd = f"srun -p h100 -N 1 -n 1 -t 00:20:00 bash -c 'source ~/init.sh; {prog} {size} {chares} +HapiPoolSize 16M'"
+        cmd = f"srun -p h100 -N 1 -n 1 -t 00:20:00 bash -c 'source ~/init.sh; {base_cmd}'"
 
     log(f"--> Executing: Size={size} Chares={chares} ({method_name})")
     try:
